@@ -1,0 +1,24 @@
+{
+  "name": "cis4307-final-project",
+  "version": "1.0.0",
+  "description": "CIS 4307 - Implementing Leader Election in the Raft Protocol",
+  "main": "src/index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ChristopherBilg/CIS4307-final-project.git"
+  },
+  "author": "",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/ChristopherBilg/CIS4307-final-project/issues"
+  },
+  "homepage": "https://github.com/ChristopherBilg/CIS4307-final-project#readme",
+  "devDependencies": {
+    "chai": "^4.2.0",
+    "eslint": "^6.8.0",
+    "mocha": "^7.1.1"
+  }
+}
