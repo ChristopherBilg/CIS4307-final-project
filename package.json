@@ -5,14 +5,15 @@
   "main": "src/index.js",
   "private": true,
   "scripts": {
+    "start": "node src/index.js",
     "test": "nyc mocha tests/",
-    "lint": "eslint src/ ; eslint test/"
+    "lint": "eslint src/ && eslint test/"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/ChristopherBilg/CIS4307-final-project.git"
   },
-  "author": "",
+  "author": "Christopher Bilger",
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/ChristopherBilg/CIS4307-final-project/issues"
