@@ -1,4 +1,5 @@
 /* jshint esversion: 8 */
+const dgram = require('dgram');
 
 /**
  * The RaftNode class is an instance of a node in a Raft distributed network.
@@ -21,8 +22,7 @@ class RaftNode {
     this.port = this.address.split(':')[1];
     this.port = parseInt(this.port, 10);
 
-    // Synchronize with all other nodes on who the leader is, if anybody
-    this.leaderNode = this.establishLeaderNode();
+    // Open port for all receiving messages
 
     // Loop checking for leader or receiving heartbeat messages or whatnot
     this.loop();
@@ -48,11 +48,14 @@ class RaftNode {
 
     while (true) {
       await sleep(1000);
-      console.log(new Date().getTime());
-      console.log(this);
+
+      this.leader = this.establishLeaderNode();
       // open port
       // if leader do heartbeat message
       // if not leader check countdown timer and start election if needed
+
+      console.log(new Date().getTime());
+      console.log(this);
     }
   }
 }
