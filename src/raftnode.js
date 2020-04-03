@@ -23,9 +23,41 @@ class RaftNode {
     this.port = parseInt(this.port, 10);
 
     // Open port for all receiving messages
+    this.openSocket(this.hostname, this.port);
 
     // Loop checking for leader or receiving heartbeat messages or whatnot
     this.loop();
+  }
+
+  /**
+   * @param {String} [hostname] The hostname to be opened.
+   * @param {Number} [port] The port number to be opened.
+   */
+  openSocket(hostname, port) {
+    /**
+     * @param {socket} [socket] The socket to close.
+     */
+    const closeSocket = (socket) => {
+      socket.close();
+    };
+
+    const socket = dgram.createSocket('udp4');
+
+    socket.on('error', (error) => {
+      console.log('Error:', error);
+      closeSocket(socket);
+    });
+
+    socket.on('listening', () => {
+      const address = socket.address();
+      console.log(`Listening on: ${address.address}:${address.port}`);
+    });
+
+    socket.on('message', (message, remoteAddressInfo) => {
+      console.log(`Received ${message} from ${remoteAddressInfo.address}:${remoteAddressInfo.port}`);
+    });
+
+    socket.bind(port, hostname);
   }
 
   /**
@@ -39,23 +71,30 @@ class RaftNode {
   }
 
   /**
-   * @return {null} This will never return.
+   * @return {null} This function should never return.
    */
   async loop() {
     const sleep = (ms) => {
       return new Promise((resolve, reject) => setTimeout(resolve, ms));
     };
 
+    const getRandomFloat = (min, max) => {
+      return Math.random() * (max - min) + min;
+    };
+
+    const timerMax = getRandomFloat(0.5, 1.5);
+    let timer = timerMax;
+
     while (true) {
       await sleep(1000);
 
       this.leader = this.establishLeaderNode();
-      // open port
       // if leader do heartbeat message
       // if not leader check countdown timer and start election if needed
 
       console.log(new Date().getTime());
       console.log(this);
+      console.log(timerMax);
     }
   }
 }
