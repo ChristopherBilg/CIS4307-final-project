@@ -10,42 +10,46 @@ class RaftNode {
    * @param {String} [nodeNumber]
    */
   constructor(configurationFilename, nodeNumber) {
-    const config = require('./config.json');
+    this.config = require('./config.json');
 
     // Establish this node's identity and that they are in sync with other nodes
     this.name = `node${nodeNumber}`;
 
-    this.address = config.nodes[`${this.name}`];
+    this.address = this.config.nodes[`${this.name}`];
 
     this.hostname = this.address.split(':')[0];
 
     this.port = this.address.split(':')[1];
     this.port = parseInt(this.port, 10);
 
+    this.round = 0;
+    this.receivedMessages = {};
+
     // Open port for all receiving messages
-    this.openSocket(this.hostname, this.port);
+    this.socket = this.openSocket(this.hostname, this.port);
 
     // Loop checking for leader or receiving heartbeat messages or whatnot
     this.loop();
   }
 
   /**
+   * @param {socket} [socket] The socket to close.
+   */
+  closeSocket(socket) {
+    return;
+  };
+
+  /**
    * @param {String} [hostname] The hostname to be opened.
    * @param {Number} [port] The port number to be opened.
+   * @return {Socket} [socket] The socket that was opened.
    */
   openSocket(hostname, port) {
-    /**
-     * @param {socket} [socket] The socket to close.
-     */
-    const closeSocket = (socket) => {
-      socket.close();
-    };
-
     const socket = dgram.createSocket('udp4');
 
     socket.on('error', (error) => {
       console.log('Error:', error);
-      closeSocket(socket);
+      this.closeSocket(socket);
     });
 
     socket.on('listening', () => {
@@ -58,13 +62,44 @@ class RaftNode {
     });
 
     socket.bind(port, hostname);
+    return socket;
   }
 
   /**
    * @return {String} The name of the leader node, null if none are leader.
    */
   establishLeaderNode() {
-    // Ping all possible nodes 10 times over a 1 second interval
+    this.round += 1;
+
+    for (const node in this.config.nodes) {
+      if (node === this.name) {
+        continue;
+      }
+
+      const pingNode = (node, message) => {
+        const address = this.config.nodes[`${node}`];
+        const hostname = address.split(':')[0];
+        const port = parseInt(address.split(':')[1], 10);
+
+        this.socket.send(message, 0, message.length, port, hostname, (error) => {
+          // DEBUG LOGS
+          // console.log('Error:', error);
+          // this.closeSocket(this.socket);
+        });
+      };
+
+      const message = {
+        round: this.round,
+        type: 'getLeader',
+      };
+
+      pingNode(node, JSON.stringify(message));
+    }
+
+    ((ms) => {
+      return new Promise((resolve, reject) => setTimeout(resolve, ms));
+    })(1000);
+
     // Send a 'leader' identity request message to all nodes that respond
     // When a majority consensus is reached, return that node name
     return null;
@@ -82,19 +117,16 @@ class RaftNode {
       return Math.random() * (max - min) + min;
     };
 
-    const timerMax = getRandomFloat(0.5, 1.5);
-    let timer = timerMax;
-
     while (true) {
-      await sleep(1000);
+      await sleep(100);
 
       this.leader = this.establishLeaderNode();
       // if leader do heartbeat message
       // if not leader check countdown timer and start election if needed
 
-      console.log(new Date().getTime());
-      console.log(this);
-      console.log(timerMax);
+      // DEBUG LOGS
+      // console.log(new Date().getTime());
+      // console.log(this);
     }
   }
 }
