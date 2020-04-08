@@ -25,6 +25,11 @@ class RaftNode {
     this.round = 0;
     this.receivedMessages = {};
 
+    // Leader
+    this.timer = null;
+    this.timerFull = null;
+    this.leader = null;
+
     // Open port for all receiving messages
     this.socket = this.openSocket(this.hostname, this.port);
 
@@ -45,6 +50,24 @@ class RaftNode {
    * @return {Socket} [socket] The socket that was opened.
    */
   openSocket(hostname, port) {
+    const pingNodes = (message) => {
+      for (const node in this.config.nodes) {
+        if (node === this.name) {
+          continue;
+        }
+
+        const nodeAddress = this.config.nodes[`${node}`];
+        const nodeHostname = nodeAddress.split(':')[0];
+        const nodePort = parseInt(nodeAddress.split(':')[1], 10);
+
+        this.socket.send(message, 0, message.length, nodePort, nodeHostname, (error) => {
+          // DEBUG LOGS
+          // console.log('Error:', error);
+          // this.closeSocket(this.socket);
+        });
+      }
+    };
+
     const socket = dgram.createSocket('udp4');
 
     socket.on('error', (error) => {
@@ -58,7 +81,54 @@ class RaftNode {
     });
 
     socket.on('message', (message, remoteAddressInfo) => {
-      console.log(`Received ${message} from ${remoteAddressInfo.address}:${remoteAddressInfo.port}`);
+      console.log(`Received ${message} `+
+                  `from ${remoteAddressInfo.address}` +
+                  `:${remoteAddressInfo.port}`);
+
+      message = JSON.parse(message);
+      if (message.round > this.round) {
+        this.round = message.round;
+      }
+
+      switch (message.type) {
+        case 'getLeader':
+          const responseMessage = {
+            round: message.round,
+            type: 'setLeader',
+            leader: this.leader,
+          };
+          pingNodes(JSON.stringify(responseMessage));
+          break;
+        case 'setLeader':
+          this.receivedMessages[`${message.round}`] = {};
+          this.receivedMessages[`${message.round}`].leader = message.leader;
+
+          if (this.leader === null && message.leader === null) {
+            this.leader = this.name;
+            break;
+          }
+
+          if (this.receivedMessages[`${message.round}`].count === undefined) {
+            this.receivedMessages[`${message.round}`].count = 0;
+          } else {
+            this.receivedMessages[`${message.round}`].count += 1;
+          }
+
+          if (this.receivedMessages[`${message.round}`].count > this.config.N) {
+            if (message.leader !== null) {
+              this.leader = message.leader;
+            }
+            console.log(`Setting my value of leader to ${this.leader}`);
+          }
+
+          break;
+        case 'heartbeat':
+          this.timer = this.timerFull;
+          break;
+        default:
+          console.log('Message type not valid or incorrectly set.');
+          break;
+      }
     });
 
     socket.bind(port, hostname);
@@ -66,7 +136,7 @@ class RaftNode {
   }
 
   /**
-   * @return {String} The name of the leader node, null if none are leader.
+   * @return {null} Always returns null.
    */
   establishLeaderNode() {
     this.round += 1;
@@ -98,7 +168,7 @@ class RaftNode {
 
     ((ms) => {
       return new Promise((resolve, reject) => setTimeout(resolve, ms));
-    })(1000);
+    })(500);
 
     // Send a 'leader' identity request message to all nodes that respond
     // When a majority consensus is reached, return that node name
@@ -117,12 +187,44 @@ class RaftNode {
       return Math.random() * (max - min) + min;
     };
 
+    const pingNodes = (message) => {
+      for (const node in this.config.nodes) {
+        if (node === this.name) {
+          continue;
+        }
+
+        const nodeAddress = this.config.nodes[`${node}`];
+        const nodeHostname = nodeAddress.split(':')[0];
+        const nodePort = parseInt(nodeAddress.split(':')[1], 10);
+
+        this.socket.send(message, 0, message.length, nodePort, nodeHostname, (error) => {
+          // DEBUG LOGS
+          // console.log('Error:', error);
+          // this.closeSocket(this.socket);
+        });
+      }
+    };
+
+    this.timerFull = getRandomFloat(0.5, 1.5);
+    this.timer = this.timerFull;
+
     while (true) {
       await sleep(100);
 
-      this.leader = this.establishLeaderNode();
-      // if leader do heartbeat message
-      // if not leader check countdown timer and start election if needed
+      if (this.timer <= 0) {
+        this.timer = this.timerFull;
+        this.establishLeaderNode();
+      } else {
+        this.timer -= 0.1;
+      }
+
+      if (this.leader === this.name) {
+        const message = {
+          type: 'heartbeat',
+        };
+
+        pingNodes(JSON.stringify(message));
+      }
 
       // DEBUG LOGS
       // console.log(new Date().getTime());
