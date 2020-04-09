@@ -7,7 +7,13 @@
   "scripts": {
     "start": "node src/index.js",
     "test": "nyc mocha tests/",
-    "lint": "eslint src/ && eslint test/"
+    "lint": "eslint src/ && eslint test/",
+
+    "node0": "node src/raftnode.js src/config.json 0",
+    "node1": "node src/raftnode.js src/config.json 1",
+    "node2": "node src/raftnode.js src/config.json 2",
+    "node3": "node src/raftnode.js src/config.json 3",
+    "node4": "node src/raftnode.js src/config.json 4"
   },
   "repository": {
     "type": "git",
