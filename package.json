@@ -6,9 +6,8 @@
   "private": true,
   "scripts": {
     "start": "node src/index.js",
-    "test": "nyc mocha tests/",
+    "test": "nyc mocha test/",
     "lint": "eslint src/ && eslint test/",
-
     "node0": "node src/raftnode.js src/config.json 0",
     "node1": "node src/raftnode.js src/config.json 1",
     "node2": "node src/raftnode.js src/config.json 2",
