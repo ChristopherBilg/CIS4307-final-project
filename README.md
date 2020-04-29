@@ -11,3 +11,6 @@ CIS 4307 - Implementing Leader Election in the Raft Protocol
 - 'npm run node3'
 - 'npm run node4'
 4. Test and play around with the functionality of the Raft leader election by closing each process. (Linux/Unix: Ctrl-C)
+
+## Errors During Program Execution
+During the execution of the above program, there is an error that occurs that I have not been able to remove. I debugged my code and found that the error is the result of having 3 or more running nodes, where each node will start the leader election even though only 3 of the 5 nodes are active. This should not be the case as you should need 4 or more running nodes in order to start the election. My apologies but I was not able to remedy this error due to everything happening with the COVID-19 outbreak and time constraints.
